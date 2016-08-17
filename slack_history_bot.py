@@ -2,11 +2,12 @@ import time
 
 from pymongo import MongoClient
 from slackclient import SlackClient
+import os
 
 BOT_NAME = 'historybot'
 BOT_ID = '--'
 
-slack_client = SlackClient("todo: get secret id from env")
+slack_client = SlackClient(os.environ.get('HISTORY_SLACK_BOT_KEY'))
 mongo_client = MongoClient()
 db = mongo_client.slack_history_db
 history_collection = db.history
