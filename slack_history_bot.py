@@ -10,8 +10,7 @@ from slackclient import SlackClient
 BOT_NAME = 'historybot'
 BOT_ID = '--'
 
-# slack_client = SlackClient(os.environ.get('HISTORY_SLACK_BOT_KEY'))
-slack_client = SlackClient('xoxb-70176096084-POycIyI9iEP3WHGwPpc8FKZf')
+slack_client = SlackClient(os.environ.get('HISTORY_SLACK_BOT_KEY'))
 mongo_client = MongoClient()
 db = mongo_client.slack_history_db
 history_collection = db.history
