@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import datetime
 import os
 import time
@@ -93,7 +95,6 @@ def parse_slack_output(slack_rtm_output):
     output_list = slack_rtm_output
     if output_list and len(output_list) > 0:
         for output in output_list:
-            print output
             if output and 'text' in output and get_bot_name() in output['text']:
                 return output['text'].split(get_bot_name())[1].strip().lower(), output['channel']
             elif output and 'text' in output:
@@ -110,7 +111,6 @@ def parse_slack_output(slack_rtm_output):
 if __name__ == "__main__":
     api_call = slack_client.api_call("users.list")
     if api_call.get('ok'):
-        # retrieve all users so we can find our bot
         users = api_call.get('members')
         for user in users:
             print user
@@ -122,8 +122,9 @@ if __name__ == "__main__":
                 BOT_ID = user.get('id')
     else:
         print("could not find bot user with the name " + BOT_NAME)
+        exit()
 
-    READ_WEBSOCKET_DELAY = 1  # 1 second delay between reading from firehose
+    READ_WEBSOCKET_DELAY = 1
 
     run = True
     while run:
