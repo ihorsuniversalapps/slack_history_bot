@@ -10,7 +10,8 @@ from slackclient import SlackClient
 BOT_NAME = 'historybot'
 BOT_ID = '--'
 
-slack_client = SlackClient(os.environ.get('HISTORY_SLACK_BOT_KEY'))
+# slack_client = SlackClient(os.environ.get('HISTORY_SLACK_BOT_KEY'))
+slack_client = SlackClient('xoxb-70176096084-POycIyI9iEP3WHGwPpc8FKZf')
 mongo_client = MongoClient()
 db = mongo_client.slack_history_db
 history_collection = db.history
@@ -70,12 +71,16 @@ def handle_command(command, channel):
             users_normalized[usr['id']] = usr
 
         for record in history:
-            messages += "{}   {}: {}\n".format(
+            print record
+            messages += u"{}   {}: {}\n".format(
                 datetime.datetime.fromtimestamp(float(record['ts'])),
                 users_normalized[record['user']]['profile']['real_name_normalized'],
                 record['text']
             )
-        print slack_client.api_call("files.upload", channels=channel, filename='history.txt', file=messages)
+        try:
+            print slack_client.api_call("files.upload", channels=channel, filename='history.txt', file=messages)
+        except Exception as e:
+            print e
     elif command.startswith(COMMAND_HELP):
         message = """
         I can do next things:
