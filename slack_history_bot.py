@@ -1,8 +1,9 @@
+import datetime
+import os
 import time
 
 from pymongo import MongoClient
 from slackclient import SlackClient
-import os
 
 BOT_NAME = 'historybot'
 BOT_ID = '--'
@@ -23,7 +24,7 @@ COMMAND_CLEAR = "clear"
 
 
 def get_bot_name():
-    return "<@" + BOT_ID + ">:"
+    return "<@" + BOT_ID + ">"
 
 
 def post_message(channel, response):
@@ -31,6 +32,7 @@ def post_message(channel, response):
 
 
 def handle_command(command, channel):
+    print command, channel
     if command.startswith(COMMAND_START):
         channel_obj = {'channel_id': channel}
         channel_id = channels_collections.find_one(channel_obj)
@@ -57,7 +59,21 @@ def handle_command(command, channel):
         history_collection.delete_many({'channel': channel})
         post_message(channel, "I have forgotten everything.")
     elif command.startswith(COMMAND_GET):
-        post_message(channel, "Not implemented yet.")
+        history = history_collection.find({'channel': channel})
+        users_col = users_collection.find()
+        messages = ""
+
+        users_normalized = {}
+        for usr in users_col:
+            users_normalized[usr['id']] = usr
+
+        for record in history:
+            messages += "{}   {}: {}\n".format(
+                datetime.datetime.fromtimestamp(float(record['ts'])),
+                users_normalized[record['user']]['profile']['real_name_normalized'],
+                record['text']
+            )
+        print slack_client.api_call("files.upload", channels=channel, filename='history.txt', file=messages)
     elif command.startswith(COMMAND_HELP):
         message = """
         I can do next things:
@@ -97,6 +113,7 @@ if __name__ == "__main__":
         # retrieve all users so we can find our bot
         users = api_call.get('members')
         for user in users:
+            print user
             is_user = users_collection.find_one({'id': user.get('id')})
             if not is_user:
                 users_collection.insert_one(user)
@@ -107,12 +124,20 @@ if __name__ == "__main__":
         print("could not find bot user with the name " + BOT_NAME)
 
     READ_WEBSOCKET_DELAY = 1  # 1 second delay between reading from firehose
-    if slack_client.rtm_connect():
-        print("StarterBot connected and running!")
-        while True:
-            command, channel = parse_slack_output(slack_client.rtm_read())
-            if command and channel:
-                handle_command(command.lower(), channel)
-            time.sleep(READ_WEBSOCKET_DELAY)
-    else:
-        print("Connection failed. Invalid Slack token or bot ID?")
+
+    run = True
+    while run:
+        try:
+            if slack_client.rtm_connect():
+                print("HistoryBot connected and running!")
+                while True:
+                    command, channel = parse_slack_output(slack_client.rtm_read())
+                    if command and channel:
+                        handle_command(command.lower(), channel)
+                    time.sleep(READ_WEBSOCKET_DELAY)
+            else:
+                print("Connection failed. Invalid Slack token or bot ID?")
+        except Exception as e:
+            print e.message
+        except KeyboardInterrupt:
+            run = False
